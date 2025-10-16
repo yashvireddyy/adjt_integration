@@ -5,7 +5,7 @@ pipeline {
         AWS_ACCOUNT_ID = "207613818218"
         AWS_REGION = "ap-south-1"
         IMAGE_NAME = "simple-web-app"
-        ECR_REPO = "%AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/%IMAGE_NAME%"
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
     }
 
     stages {
@@ -23,20 +23,21 @@ pipeline {
 
         stage('Login to ECR') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'my-aws-iam']]) {
-                    bat """
-                    aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REPO%
-                    """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
+                    bat '''
+                    aws ecr get-login-password --region %AWS_REGION% ^
+                    | docker login --username AWS --password-stdin %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com
+                    '''
                 }
             }
         }
 
         stage('Push to ECR') {
             steps {
-                bat """
+                bat '''
                 docker tag %IMAGE_NAME%:latest %ECR_REPO%:latest
                 docker push %ECR_REPO%:latest
-                """
+                '''
             }
         }
 
@@ -54,6 +55,18 @@ pipeline {
                     bat 'terraform apply -auto-approve'
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed (success or failure).'
+        }
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed — check logs for details.'
         }
     }
 }
