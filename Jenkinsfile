@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_ACCOUNT_ID = "207613818218"
         AWS_REGION = "ap-south-1"
-        IMAGE_NAME = "html-website"  // <-- this matches your ECR repo
+        IMAGE_NAME = "html-website"
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
     }
 
@@ -17,7 +17,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t %IMAGE_NAME% .'
+                bat 'docker build -t html-website .'
             }
         }
 
@@ -25,7 +25,7 @@ pipeline {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
                     bat """
-                    aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
                     """
                 }
             }
@@ -34,8 +34,8 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 bat """
-                docker tag %IMAGE_NAME%:latest %ECR_REPO%:latest
-                docker push %ECR_REPO%:latest
+                docker tag html-website:latest ${ECR_REPO}:latest
+                docker push ${ECR_REPO}:latest
                 """
             }
         }
@@ -44,8 +44,9 @@ pipeline {
             steps {
                 dir('terraform') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
-                    bat 'terraform init'
-            }
+                        bat 'terraform init'
+                    }
+                }
             }
         }
 
@@ -53,8 +54,9 @@ pipeline {
             steps {
                 dir('terraform') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
-                    bat 'terraform apply -auto-approve'
-            }
+                        bat 'terraform apply -auto-approve'
+                    }
+                }
             }
         }
     }
