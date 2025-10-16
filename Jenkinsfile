@@ -43,16 +43,18 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
                     bat 'terraform init'
-                }
+            }
             }
         }
 
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: '207613818218']]) {
                     bat 'terraform apply -auto-approve'
-                }
+            }
             }
         }
     }
